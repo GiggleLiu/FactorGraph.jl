@@ -1,6 +1,3 @@
-using TupleTools
-using OMEinsum
-
 export FGraph, legmap, nv, ne, vertices, edges, count_vertices, dangling_legs, occupied_legs, neighbors, add_vertex
 export isvoid, isloop, isbond, isstar, is_directed, is_simple
 export contract
