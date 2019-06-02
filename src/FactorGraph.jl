@@ -1,5 +1,5 @@
 module FactorGraph
 
-greet() = print("Hello World!")
-
+include("graph.jl")
+include("random_graphs.jl")
 end # module
