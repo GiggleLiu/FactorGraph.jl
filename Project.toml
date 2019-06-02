@@ -1,0 +1,13 @@
+name = "FactorGraph"
+uuid = "eb8b732a-84f8-11e9-3bd8-49724fb7de14"
+authors = ["JinGuo Liu"]
+version = "0.1.0"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
