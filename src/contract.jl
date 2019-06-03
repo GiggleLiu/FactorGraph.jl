@@ -21,7 +21,7 @@ function _treecontract(tree::Int, ixs, xs, iy)
     einsum((iy0,), (C,), iy), iy
 end
 
-function _treecontract(tree::Union{Tuple, Vector}, ixs, xs, iy)
+function _treecontract(tree, ixs, xs, iy)
     i, j = tree
     A, IA = _treecontract(i, ixs, xs, nothing)
     B, IB = _treecontract(j, ixs, xs, nothing)
@@ -29,7 +29,7 @@ function _treecontract(tree::Union{Tuple, Vector}, ixs, xs, iy)
     einsum((IA, IB), (A, B), _iy), _iy
 end
 
-function treecontract(tree::Union{Tuple, Vector}, ixs, xs, iy)
+function treecontract(tree, ixs, xs, iy)
     _treecontract(tree, ixs, xs, iy) |> first
 end
 

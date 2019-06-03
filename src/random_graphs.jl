@@ -1,4 +1,5 @@
 export demo_gtn, demo_gtn2, random_simple_gtn, random_gtn
+using StatsBase
 
 function demo_gtn()
     orders = [1, 3, 3, 3, 2, 4, 2]
@@ -80,7 +81,6 @@ function random_simple_gtn(::Type{T}, tensor_sizes::Vector{<:Tuple}, nbond::Int;
         try
             for ibond = 1:nbond
                 legs = gtn |> dangling_legs
-                @show length.(legs)
                 it, jt = sample(1:n, Weights(exp.(-bias_factor*length.(legs))), 2, replace=false)
                 ileg = sample(dangling_legs(gtn, it))
                 jleg = sample(dangling_legs(gtn, jt))

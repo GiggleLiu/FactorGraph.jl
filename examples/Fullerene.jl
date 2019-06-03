@@ -1,5 +1,7 @@
 using FactorGraph
+using OMEinsum
 using Zygote: @adjoint
+using Zygote
 
 bonds = ((1, 10), (1, 41), (1, 59), (2, 12), (2, 42), (2, 60), (3, 6), (3,
     43), (3, 57), (4, 8), (4, 44), (4, 58), (5, 13), (5, 56), (5,
@@ -80,8 +82,8 @@ tree = order2tree(order)
 using BenchmarkTools
 @benchmark (treecontract(tree, args...)[] |> log)/60 seconds=1
 
-@adjoint pairs2legmap(bonds) = pairs2legmap(bonds), djy->nothing
-@adjoint code(tn) = code(tn), djy->nothing
+@adjoint pairs2legmap(bonds) = pairs2legmap(bonds), adjy->nothing
+@adjoint code(tn) = code(tn), adjy->(adjy,)
 
 function fullerene(K)
     T0 = trg_T0(K)
@@ -91,10 +93,36 @@ function fullerene(K)
     tn = FGraph(tensors, lm)
 
     ccode = Tuple.(code(tn))
-    Zygote.hook(println, tn)
-    (treecontract(tree, ccode[1:end-1], tn.tensors, ccode[end])[] |> log)/60
+    tss = Tuple(tn.tensors)
+    Zygote.hook(adjy->(@show adjy; adjy), tss)
+    y = treecontract(tree, ccode[1:end-1], tss, ccode[end])
+    Zygote.hook(adjy->(@show adjy; adjy), y)
+    (y[] |> log)/60
 end
-
 
 fullerene(1.0)
 fullerene'(1.0)
+
+using FactorGraph: random_simple_gtn
+using TensorOperations
+using FactorGraph
+g = random_simple_gtn(ComplexF64, Tuple.(fill(2, 3) for i=1:30), 40, bias_factor=-5)
+
+function network(fg::FGraph)
+    [Tuple(edges(fg, ie)) for ie in vertices(fg)]
+end
+
+network(g)
+
+net = network(g)
+size_dict = FactorGraph.get_size_dict(net, g.tensors)
+
+unique_tokens = union(net...)
+c = Dict(token=>TensorOperations.Power{:χ}(get(size_dict, token, 1),1) for token in unique_tokens)
+TensorOperations.optimaltree(net, c)
+tree, cost = TensorOperations.optimaltree(net, size_dict)
+
+nitem(t::TensorOperations.BinaryTreeNode) = nitem(t.left) + nitem(t.right)
+nitem(x) = 1
+
+nitem(tree)
