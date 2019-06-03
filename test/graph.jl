@@ -2,18 +2,18 @@ using FactorGraph
 using FactorGraph: deleteat, insert
 using Test
 
-@testset "contract" begin
-    g = demo_gtn()
+@testset "eliminate" begin
+    g = demo_fg()
     for i=9:-1:1
-        g = contract(g, i)
+        g = eliminate(g, i)
     end
     @test nv(g) == 1
     @test ne(g) == 0
     @test size(g.tensors[]) == ()
 
-    g2 = demo_gtn2()
+    g2 = demo_fg2()
     for i=9:-1:1
-        g2 = contract(g2, i)
+        g2 = eliminate(g2, i)
     end
     @test nv(g2) == 1
     @test ne(g2) == 0
@@ -30,7 +30,7 @@ end
 end
 
 @testset "basic simple tn" begin
-    g = demo_gtn()
+    g = demo_fg()
     @test is_simple(g)
     @test ne(g) == 9
     @test nv(g) == 7
@@ -46,7 +46,7 @@ end
   end
 
 @testset "basic multi-graph tn" begin
-    g = demo_gtn2()
+    g = demo_fg2()
     @test !is_simple(g)
     @test ne(g) == 9
     @test nv(g) == 7
@@ -59,8 +59,8 @@ end
     @test dangling_legs(g) == [[2],[],[],[],[],[2],[]]
     @test occupied_legs(g) .|> sort == [[1], [1,2,3,4], [1,2,3,4], [1,2], [1,2], [1,3,4],[1,2]]
     @test filter(ie -> isloop(g, ie), g |> edges) == [9]
-    # contract a selfloop
-    @test dangling_legs(contract(g, 9), 7) == []
+    # eliminate a selfloop
+    @test dangling_legs(eliminate(g, 9), 7) == []
     g2 = add_vertex(g, randn(2, 2), (9,nothing))
     @test dangling_legs(g2, 8) == [2]
     @test !any(isloop.(Ref(g2), edges(g2)))

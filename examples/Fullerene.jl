@@ -103,10 +103,10 @@ end
 fullerene(1.0)
 fullerene'(1.0)
 
-using FactorGraph: random_simple_gtn
+using FactorGraph: random_simple_fg
 using TensorOperations
 using FactorGraph
-g = random_simple_gtn(ComplexF64, Tuple.(fill(2, 3) for i=1:30), 40, bias_factor=-5)
+g = random_simple_fg(ComplexF64, Tuple.(fill(2, 3) for i=1:30), 40, bias_factor=-5)
 
 function network(fg::FGraph)
     [Tuple(edges(fg, ie)) for ie in vertices(fg)]

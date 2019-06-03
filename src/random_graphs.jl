@@ -1,7 +1,7 @@
-export demo_gtn, demo_gtn2, random_simple_gtn, random_gtn
+export demo_fg, demo_fg2, random_simple_fg, random_fg
 using StatsBase
 
-function demo_gtn()
+function demo_fg()
     orders = [1, 3, 3, 3, 2, 4, 2]
     tensors = [randn(repeat([2], o)...) for o in orders]
     lm = zeros(Int, 7, 9)
@@ -33,7 +33,7 @@ function demo_gtn()
 end
 
 # non-simple graph
-function demo_gtn2()
+function demo_fg2()
     orders = [2, 4, 4, 2, 2, 4, 2]
     tensors = [randn(repeat([2], o)...) for o in orders]
     lm = zeros(Int, 7, 9)
@@ -64,7 +64,7 @@ function demo_gtn2()
     FGraph(tensors, lm)
 end
 
-function random_simple_gtn(::Type{T}, tensor_sizes::Vector{<:Tuple}, nbond::Int; bias_factor::Real=-1) where T
+function random_simple_fg(::Type{T}, tensor_sizes::Vector{<:Tuple}, nbond::Int; bias_factor::Real=-1) where T
     n = length(tensor_sizes)
     nlegs = length.(tensor_sizes) |> sum
     nlegs < 2nbond && throw(ArgumentError("Number of bond $nbond too large."))
@@ -75,30 +75,30 @@ function random_simple_gtn(::Type{T}, tensor_sizes::Vector{<:Tuple}, nbond::Int;
 
     # combine tensors with graph
     ts = [randn(T, size...) for size in tensor_sizes]
-    gtn = FGraph(ts, lm)
+    fg = FGraph(ts, lm)
 
     for i=1:100
         try
             for ibond = 1:nbond
-                legs = gtn |> dangling_legs
+                legs = fg |> dangling_legs
                 it, jt = sample(1:n, Weights(exp.(-bias_factor*length.(legs))), 2, replace=false)
-                ileg = sample(dangling_legs(gtn, it))
-                jleg = sample(dangling_legs(gtn, jt))
-                legmap(gtn)[it, ibond] = ileg
-                legmap(gtn)[jt, ibond] = jleg
+                ileg = sample(dangling_legs(fg, it))
+                jleg = sample(dangling_legs(fg, jt))
+                legmap(fg)[it, ibond] = ileg
+                legmap(fg)[jt, ibond] = jleg
             end
             break
         catch
-            legmap(gtn) .= 0
+            legmap(fg) .= 0
         end
         if i==100
             throw(ArgumentError("Can not construct this random simple graph with 100 tries, try decrease `bias_factor`."))
         end
     end
-    gtn
+    fg
 end
 
-function random_gtn(::Type{T}, nv::Int, ne::Int, link_density::Real=2/nv, bond_dimension::Int=2) where T
+function random_fg(::Type{T}, nv::Int, ne::Int, link_density::Real=2/nv, bond_dimension::Int=2) where T
     lm = zeros(Int, nv, ne)
     # randomly connect tensors
     ks = zeros(Int, nv)
@@ -115,3 +115,6 @@ function random_gtn(::Type{T}, nv::Int, ne::Int, link_density::Real=2/nv, bond_d
     ts = [randn(T, fill(bond_dimension, ndim)...) |> asarray for ndim in ks]
     FGraph(ts, lm)
 end
+
+random_fg(nv::Int, ne::Int, args...) = random_fg(Float64, nv::Int, ne::Int, args...)
+random_simple_fg(tensor_sizes::Vector{<:Tuple}, nbond::Int; kwargs...) = random_simple_fg(Float64, tensor_sizes, nbond; kwargs...)
