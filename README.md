@@ -24,7 +24,21 @@ julia> # remove the first vertex from this incidence list
        rg = rg |> rem_vertex(2)
 FGraph{Float64}(V4,E8) f1(1,4) * f2(2,3) * f3(2) * f4(3,4) * f5(2,3) * f6(2) * f7() * f8(2,3)
 
-julia> # if we want to eliminate a variable (sum over an edge)
+julia> # eliminate a variable (sum over an edge)
        rg = rg |> contract(3) |> contract(1)
 FGraph{Float64}(V3,E6) f1(1,2) * f2(2,3) * f3(1,2) * f4(1) * f5() * f6(1,2)
+
+julia> # the resulting tensors
+       rg.tensors .|> size
+3-element Array{Tuple{Int64,Int64,Int64,Vararg{Int64,N} where N},1}:
+ (2, 2, 2, 2, 2, 2)
+ (2, 2, 2, 2, 2)   
+ (2, 2, 2)         
+
+julia> # the topology of the incidence list of the resulting V-3, E-4 graph.
+       rg.legmap
+3×4 Array{Int64,2}:
+ 4  5  0  6
+ 4  0  0  5
+ 0  0  0  0
 ```
