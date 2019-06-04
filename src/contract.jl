@@ -1,4 +1,4 @@
-export optcontract, treecontract
+export optcontract, treecontract, optimaltree
 
 """
 find the optimal contraction tree.
