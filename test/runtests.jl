@@ -1,8 +1,8 @@
 using FactorGraph
 using Test
 
-@testset "graph" begin
-    include("graph.jl")
+@testset "fgraph" begin
+    include("fgraph.jl")
 end
 
 @testset "contract" begin

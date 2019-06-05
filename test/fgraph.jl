@@ -31,7 +31,7 @@ end
 
 @testset "basic simple tn" begin
     g = demo_fg()
-    @test is_simple(g)
+    @test issimple_graph(g)
     @test ne(g) == 9
     @test nv(g) == 7
     @test vertices(g) == 1:7
@@ -47,7 +47,7 @@ end
 
 @testset "basic multi-graph tn" begin
     g = demo_fg2()
-    @test !is_simple(g)
+    @test !issimple_graph(g)
     @test ne(g) == 9
     @test nv(g) == 7
     @test vertices(g) == 1:7

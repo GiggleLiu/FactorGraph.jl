@@ -3,7 +3,6 @@ using OMEinsum: outputtensor
 
 @adjoint setdiff(args...) = setdiff(args...), _ -> nothing
 @adjoint intersect(args...) = intersect(args...), _ -> nothing
-@adjoint outputtensor(args...) = outputtensor(tensors, contractions, outinds), adjy -> nothing
 
 nograd(f, args...) = f(args...)
 @adjoint nograd(f, args...) = f(args...), _ -> nothing

@@ -7,7 +7,8 @@ using TensorOperations
 
 include("utils.jl")
 include("contract.jl")
-include("graph.jl")
+include("incidence_matrix.jl")
+include("fgraph.jl")
 include("random_graphs.jl")
 include("Zygote_patch.jl")
 
