@@ -104,7 +104,7 @@ function eliminate(fg::FGraph, ie::Int)
     xs = Tuple(fg.tensors[vs])
     ixs = Tuple(Tuple.(IVS))
     iy = Tuple(union(IC, ID))
-    new_tensor = einsum(ixs, xs, iy)
+    new_tensor = einsum(EinCode{ixs,iy}(), xs)
     NIC = Tuple(i > ie ? i-1 : i for i in IC)
     fg |> rem_edge(ie) |> rem_vertex(vs) |> add_vertex(new_tensor, NIC)
 end

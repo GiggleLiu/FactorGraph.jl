@@ -23,11 +23,11 @@ end
 @adjoint legmap_frombonds(bonds) = legmap_frombonds(bonds), adjy->nothing
 
 """the tensor defined on the site of a ferromagnetic ising model"""
-function trg_T0(K::Float64)
+function trg_T0(K)
     # sqrt(exp.(-K K; K -K))
     M = [sqrt(cosh(K)) sqrt(sinh(K));
          sqrt(cosh(K)) -sqrt(sinh(K))]
-    T = einsum(((1,2), (1,3), (1,4)), (M, M, M), (2,3,4))
+    T = ein"ij,ik,il->jkl"(M, M, M)
 end
 
 function fullerene(K)

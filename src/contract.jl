@@ -18,7 +18,7 @@ end
 _treecontract(tree::Int, ixs, xs, iy::Nothing) = xs[tree], ixs[tree]
 function _treecontract(tree::Int, ixs, xs, iy)
     iy0, y = ixs[tree], xs[tree]
-    einsum((iy0,), (C,), iy), iy
+    einsum(EinCode{(iy0,), iy}(), (C,)), iy
 end
 
 function _treecontract(tree, ixs, xs, iy)
@@ -26,7 +26,10 @@ function _treecontract(tree, ixs, xs, iy)
     A, IA = _treecontract(i, ixs, xs, nothing)
     B, IB = _treecontract(j, ixs, xs, nothing)
     _iy = iy == nothing ? Tuple(leg_analysis(IA, IB)[3]) : iy
-    einsum((IA, IB), (A, B), _iy), _iy
+    ixs = (IA, IB)
+    code = EinCode{ixs, _iy}()
+    @show size(A), size(B)
+    einsum(code, (A, B)), _iy
 end
 
 function treecontract(tree, ixs, xs, iy)

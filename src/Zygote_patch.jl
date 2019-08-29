@@ -1,5 +1,4 @@
 using Zygote: @adjoint, gradient, @adjoint!
-using OMEinsum: outputtensor
 
 @adjoint setdiff(args...) = setdiff(args...), _ -> nothing
 @adjoint intersect(args...) = intersect(args...), _ -> nothing
