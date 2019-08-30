@@ -28,8 +28,10 @@ function _treecontract(tree, ixs, xs, iy)
     _iy = iy == nothing ? Tuple(leg_analysis(IA, IB)[3]) : iy
     ixs = (IA, IB)
     code = EinCode{ixs, _iy}()
-    @show size(A), size(B)
-    einsum(code, (A, B)), _iy
+    #@show size(A), size(B)
+    res = einsum(code, (A, B)), _iy
+    #@show res, iy
+    return res
 end
 
 function treecontract(tree, ixs, xs, iy)
