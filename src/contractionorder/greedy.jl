@@ -1,4 +1,5 @@
-export tree_greedy, MinSpaceOut, MinSpaceDiff, ContractionTree
+export tree_greedy, MinSpaceOut, MinSpaceDiff
+export timespace_complexity
 
 struct MinSpaceOut end
 struct MinSpaceDiff end
@@ -12,11 +13,6 @@ struct LegInfo{ET}
     l012::Vector{ET}
 end
 
-struct ContractionTree
-    left
-    right
-end
-
 """
     tree_greedy(incidence_list, log2_sizes)
 
@@ -24,6 +20,7 @@ Compute greedy order, and the time and space complexities, the rows of the `inci
 `log2_sizes` are defined on edges.
 """
 function tree_greedy(incidence_list::IncidenceList{VT,ET}, log2_edge_sizes; method=MinSpaceOut()) where {VT,ET}
+    incidence_list = copy(incidence_list)
     n = nv(incidence_list)
     #tree_dict = collect(Any, 1:n)
     log2_tcs = Float64[] # time complexity
@@ -40,7 +37,7 @@ function tree_greedy(incidence_list::IncidenceList{VT,ET}, log2_edge_sizes; meth
                 vmin = v
             end
         end
-        log2_tc_step, code = contract_pair!(incidence_list, pair..., log2_edge_sizes)
+        log2_tc_step, sc, code = contract_pair!(incidence_list, pair..., log2_edge_sizes)
         push!(log2_tcs, log2_tc_step)
         push!(log2_scs, space_complexity(incidence_list, log2_edge_sizes))
         if nv(incidence_list) > 1
@@ -62,6 +59,7 @@ function contract_pair!(incidence_list, vi, vj, log2_edge_sizes)
     # einsum code
     eout = legsets.l01 ∪ legsets.l02 ∪ legsets.l012
     code = (edges(incidence_list, vi), edges(incidence_list, vj)) => eout
+    sc = log2dim(eout)
 
     # change incidence_list
     delete_vertex!(incidence_list, vj)
@@ -70,7 +68,7 @@ function contract_pair!(incidence_list, vi, vj, log2_edge_sizes)
         replace_vertex!(incidence_list, e, vj=>vi)
     end
     remove_edges!(incidence_list, legsets.l1 ∪ legsets.l2 ∪ legsets.l12)
-    return tc, code
+    return tc, sc, code
 end
 
 function evaluate_costs(method, incidence_list::IncidenceList{VT,ET}, log2_edge_sizes) where {VT,ET}
@@ -139,4 +137,19 @@ function space_complexity(incidence_list, log2_sizes)
         end
     end
     return sc
+end
+
+function contract_tree!(incidence_list::IncidenceList, tree::ContractionTree, log2_edge_sizes, tcs, scs)
+    vi = tree.left isa ContractionTree ? contract_tree!(incidence_list, tree.left, log2_edge_sizes, tcs, scs) : tree.left
+    vj = tree.right isa ContractionTree ? contract_tree!(incidence_list, tree.right, log2_edge_sizes, tcs, scs) : tree.right
+    tc, sc, code = contract_pair!(incidence_list, vi, vj, log2_edge_sizes)
+    push!(tcs, tc)
+    push!(scs, sc)
+    return vi
+end
+
+function timespace_complexity(incidence_list::IncidenceList, tree::ContractionTree, log2_edge_sizes)
+    tcs, scs = Float64[], Float64[]
+    contract_tree!(copy(incidence_list), tree, log2_edge_sizes, tcs, scs)
+    return log2sumexp2(tcs), maximum(scs)
 end

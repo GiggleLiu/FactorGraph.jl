@@ -2,8 +2,6 @@ module FactorGraph
 
 using TupleTools
 using OMEinsum
-using TensorOperations: optimaltree, Power
-using TensorOperations
 
 include("utils.jl")
 include("contract.jl")

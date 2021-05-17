@@ -7,7 +7,6 @@ version = "0.1.1"
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 OMEinsum = "ebe7aa44-baf0-506c-a96f-8464559b3922"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
-TensorOperations = "6aa20fa7-93e2-5fca-9bc0-fbd0db3c71a2"
 TupleTools = "9d95972d-f1c8-5527-a6e0-b4b365fa01f6"
 
 [compat]

@@ -3,7 +3,7 @@ export IncidenceList
 struct IncidenceList{VT,ET}
     v2e::Dict{VT,Vector{ET}}
     e2v::Dict{ET,Vector{VT}}
-    openedges::Vector{VT}
+    openedges::Vector{ET}
 end
 
 function IncidenceList(v2e::Dict{VT,Vector{ET}}; openedges=ET[]) where {VT,ET}
@@ -20,7 +20,7 @@ function IncidenceList(v2e::Dict{VT,Vector{ET}}; openedges=ET[]) where {VT,ET}
     IncidenceList(v2e, e2v, openedges)
 end
 
-Base.copy(il::IncidenceList) = IncidenceList(copy(il.v2e), copy(il.e2v), copy(il.openedges))
+Base.copy(il::IncidenceList) = IncidenceList(deepcopy(il.v2e), deepcopy(il.e2v), copy(il.openedges))
 
 function neighbors(il::IncidenceList{VT}, v) where VT
     res = VT[]
