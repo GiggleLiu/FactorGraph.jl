@@ -52,11 +52,13 @@ function tree_greedy(incidence_list::IncidenceList{VT,ET}, log2_edge_sizes; meth
     tree = Dict{VT,Any}([v=>v for v in vertices(incidence_list)])
     while true
         cost_values = evaluate_costs(method, incidence_list, log2_edge_sizes)
-        @show cost_values
         local pair
         vmin = Inf
         for (k,v) in cost_values
-            v < vmin && (pair = k)
+            if v < vmin
+                pair = k
+                vmin = v
+            end
         end
         log2_tc_step, code = contract_pair!(incidence_list, pair..., log2_edge_sizes)
         push!(log2_tcs, log2_tc_step)
@@ -78,12 +80,15 @@ function contract_pair!(incidence_list, vi, vj, log2_edge_sizes)
     tc = D12+D01+D02+D012  # dangling legs D1 and D2 do not contribute
 
     # einsum code
-    nout = legsets.l01 ∪ legsets.l02 ∪ legsets.l012
-    code = (edges(incidence_list, vi), edges(incidence_list, vj)) => nout
+    eout = legsets.l01 ∪ legsets.l02 ∪ legsets.l012
+    code = (edges(incidence_list, vi), edges(incidence_list, vj)) => eout
 
     # change incidence_list
     delete_vertex!(incidence_list, vj)
-    change_edges!(incidence_list, vi, nout)
+    change_edges!(incidence_list, vi, eout)
+    for e in eout
+        replace_vertex!(incidence_list, e, vj=>vi)
+    end
     remove_edges!(incidence_list, legsets.l1 ∪ legsets.l2 ∪ legsets.l12)
     return tc, code
 end
@@ -141,7 +146,7 @@ end
 function greedy_loss(::MinSOut, incidence_list, log2_edge_sizes, vi, vj)
     log2dim(legs) = sum(l->log2_edge_sizes[l], legs, init=0)
     legs = analyze_contraction(incidence_list, vi, vj)
-    log2dim(legs.l01)+log2dim(legs.l02)+log2dim(legs.l012)  # only counts external legs
+    log2dim(legs.l01)+log2dim(legs.l02)+log2dim(legs.l012) - 0.01*(log2dim(legs.l12)+log2dim(legs.l1)+log2dim(legs.l2))  # only counts external legs
 end
 
 function greedy_loss(::MinSDiff, incidence_list, log2_edge_sizes, vi, vj)
@@ -201,6 +206,22 @@ function remove_edges!(incidence_list, es)
     return incidence_list
 end
 
+function replace_vertex!(incidence_list, e, pair)
+    el = incidence_list.e2v[e]
+    if pair.first ∈ el
+        if pair.second ∈ el
+            deleteat!(el, findfirst(==(pair.first), el))
+        else
+            replace!(el, pair)
+        end
+    else
+        if pair.second ∉ el
+            push!(el, pair.second)
+        end
+    end
+    return incidence_list
+end
+
 using Test
 @testset "analyze contraction" begin
     incidence_list = IncidenceList(Dict('A' => ['a', 'b', 'k', 'o', 'f'], 'B'=>['a', 'c', 'd', 'm', 'f'], 'C'=>['b', 'c', 'e', 'f'], 'D'=>['e'], 'E'=>['d', 'f']), openedges=['c', 'f', 'o'])
@@ -211,12 +232,22 @@ using Test
     @test Set(info.l01) == Set(['b','o'])
     @test Set(info.l02) == Set(['c', 'd'])
     @test Set(info.l012) == Set(['f'])
-
 end
 
 @testset "tree greedy" begin
     incidence_list = IncidenceList(Dict('A' => ['a', 'b'], 'B'=>['a', 'c', 'd'], 'C'=>['b', 'c', 'e', 'f'], 'D'=>['e'], 'E'=>['d', 'f']))
     log2_edge_sizes = Dict([c=>i for (i,c) in enumerate(['a', 'b', 'c', 'd', 'e', 'f'])]...)
+    contract_pair!(incidence_list, 'A', 'B', log2_edge_sizes)
+    target = IncidenceList(Dict('A' => ['b', 'c', 'd'], 'C'=>['b', 'c', 'e', 'f'], 'D'=>['e'], 'E'=>['d', 'f']))
+    @test incidence_list.v2e == target.v2e
+    @test length(target.e2v) == length(incidence_list.e2v)
+    for (k,v) in incidence_list.e2v
+        @test sort(target.e2v[k]) == sort(v)
+    end
+    incidence_list = IncidenceList(Dict('A' => ['a', 'b'], 'B'=>['a', 'c', 'd'], 'C'=>['b', 'c', 'e', 'f'], 'D'=>['e'], 'E'=>['d', 'f']))
+    costs = evaluate_costs(MinSOut(), incidence_list, log2_edge_sizes)
+    @test costs == Dict(('A', 'B')=>9-0.01, ('A', 'C')=>15-0.02, ('B','C')=>18-0.03, ('B','E')=>10-0.04, ('C','D')=>11-0.05, ('C', 'E')=>14-0.06)
     tree, log2_tcs, log2_scs = tree_greedy(incidence_list, log2_edge_sizes)
-    @show tree, log2_tcs, log2_scs
+    @test log2_tcs == [10.0, 16, 15, 9]
+    @test tree == ContractionTree(ContractionTree('A', 'B'), ContractionTree(ContractionTree('C', 'D'), 'E'))
 end
