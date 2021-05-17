@@ -1,9 +1,26 @@
 using FactorGraph
-using OMEinsum: bpcheck, einsum
+using OMEinsum
 using Zygote
 using Test
 
-Base.conj(arr::AbstractArray{<:Any, 0}) = conj!(copy(arr))
+function bpcheck(f, args...; η = 1e-5, verbose = false)
+    g = gradient(f, args...)
+    all(x->x===(nothing), g) && error()
+    dy_ref = 0
+    for x in g
+        x === nothing && continue
+        x isa Tuple && (dy_ref += η * mapreduce(y -> y === nothing ? 0 : sum(abs2,y), +, x))
+        x isa AbstractArray && (dy_ref += η * sum(abs2,x))
+    end
+    dy = f(args...) - f([gi === nothing ? arg : arg .- η .* gi for (arg, gi) in zip(args,g)]...)
+
+    verbose && @show dy
+    verbose && @show dy_ref
+
+    isapprox(dy, dy_ref, rtol=1e-2, atol=1e-8)
+end
+
+#Base.conj(arr::AbstractArray{<:Any, 0}) = conj!(copy(arr))
 
 @testset "einsum bp" begin
     a = randn(ComplexF64, 3,3)

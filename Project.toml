@@ -4,17 +4,18 @@ authors = ["JinGuo Liu"]
 version = "0.1.1"
 
 [deps]
+ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 OMEinsum = "ebe7aa44-baf0-506c-a96f-8464559b3922"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 TensorOperations = "6aa20fa7-93e2-5fca-9bc0-fbd0db3c71a2"
 TupleTools = "9d95972d-f1c8-5527-a6e0-b4b365fa01f6"
-Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
 julia = "1"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [targets]
-test = ["Test"]
+test = ["Test", "Zygote"]

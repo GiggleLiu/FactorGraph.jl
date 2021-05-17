@@ -16,16 +16,16 @@ function leg_analysis(IVS...)
 end
 
 _treecontract(tree::Int, ixs, xs, iy::Nothing) = xs[tree], ixs[tree]
-function _treecontract(tree::Int, ixs, xs, iy)
-    iy0, y = ixs[tree], xs[tree]
-    einsum(EinCode{(iy0,), iy}(), (C,)), iy
-end
+#function _treecontract(tree::Int, ixs, xs, iy)
+#    iy0, y = ixs[tree], xs[tree]
+#    einsum(EinCode{(iy0,), iy}(), (y,)), iy
+#end
 
 function _treecontract(tree, ixs, xs, iy)
     i, j = tree
     A, IA = _treecontract(i, ixs, xs, nothing)
     B, IB = _treecontract(j, ixs, xs, nothing)
-    _iy = iy == nothing ? Tuple(leg_analysis(IA, IB)[3]) : iy
+    _iy = iy === nothing ? Tuple(leg_analysis(IA, IB)[3]) : iy
     ixs = (IA, IB)
     code = EinCode{ixs, _iy}()
     @show size(A), size(B)

@@ -10,6 +10,6 @@ include("contract.jl")
 include("incidence_matrix.jl")
 include("fgraph.jl")
 include("random_graphs.jl")
-include("Zygote_patch.jl")
+include("autodiff.jl")
 
 end # module
