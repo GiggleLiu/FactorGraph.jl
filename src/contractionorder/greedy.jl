@@ -1,27 +1,7 @@
-export tree_greedy, MinSOut, MinSDiff
+export tree_greedy, MinSpaceOut, MinSpaceDiff, ContractionTree
 
-struct MinSOut end
-struct MinSDiff end
-
-struct IncidenceList{VT,ET}
-    v2e::Dict{VT,Vector{ET}}
-    e2v::Dict{ET,Vector{VT}}
-    openedges::Vector{VT}
-end
-
-function IncidenceList(v2e::Dict{VT,Vector{ET}}; openedges=ET[]) where {VT,ET}
-    e2v = Dict{ET,Vector{VT}}()
-    for (v, es) in v2e
-        for e in es
-            if haskey(e2v, e)
-                push!(e2v[e], v)
-            else
-                e2v[e] = [v]
-            end
-        end
-    end
-    IncidenceList(v2e, e2v, openedges)
-end
+struct MinSpaceOut end
+struct MinSpaceDiff end
 
 struct LegInfo{ET}
     l1::Vector{ET}
@@ -43,7 +23,7 @@ end
 Compute greedy order, and the time and space complexities, the rows of the `incidence_list` are vertices and columns are edges.
 `log2_sizes` are defined on edges.
 """
-function tree_greedy(incidence_list::IncidenceList{VT,ET}, log2_edge_sizes; method=MinSOut()) where {VT,ET}
+function tree_greedy(incidence_list::IncidenceList{VT,ET}, log2_edge_sizes; method=MinSpaceOut()) where {VT,ET}
     n = nv(incidence_list)
     #tree_dict = collect(Any, 1:n)
     log2_tcs = Float64[] # time complexity
@@ -109,12 +89,7 @@ end
 function analyze_contraction(incidence_list::IncidenceList{VT,ET}, vi::VT, vj::VT) where {VT,ET}
     ei = edges(incidence_list, vi)
     ej = edges(incidence_list, vj)
-    leg012 = ET[]
-    leg12 = ET[]
-    leg1 = ET[]
-    leg2 = ET[]
-    leg01 = ET[]
-    leg02 = ET[]
+    leg012,leg12,leg1,leg2,leg01,leg02 = ET[], ET[], ET[], ET[], ET[], ET[]
     # external legs
     for leg in ei ∪ ej
         isext = leg ∈ incidence_list.openedges || !all(x->x==vi || x==vj, vertices(incidence_list, leg))
@@ -143,13 +118,13 @@ function analyze_contraction(incidence_list::IncidenceList{VT,ET}, vi::VT, vj::V
     return LegInfo(leg1, leg2, leg12, leg01, leg02, leg012)
 end
 
-function greedy_loss(::MinSOut, incidence_list, log2_edge_sizes, vi, vj)
+function greedy_loss(::MinSpaceOut, incidence_list, log2_edge_sizes, vi, vj)
     log2dim(legs) = sum(l->log2_edge_sizes[l], legs, init=0)
     legs = analyze_contraction(incidence_list, vi, vj)
     log2dim(legs.l01)+log2dim(legs.l02)+log2dim(legs.l012) - 0.01*(log2dim(legs.l12)+log2dim(legs.l1)+log2dim(legs.l2))  # only counts external legs
 end
 
-function greedy_loss(::MinSDiff, incidence_list, log2_edge_sizes, vi, vj)
+function greedy_loss(::MinSpaceDiff, incidence_list, log2_edge_sizes, vi, vj)
     log2dim(legs) = sum(l->log2_edge_sizes[l], legs, init=0)
     legs = analyze_contraction(incidence_list, vi, vj)
     D1,D2,D12,D01,D02,D012 = log2dim.(getfield.(Ref(legs), 1:6))
@@ -164,90 +139,4 @@ function space_complexity(incidence_list, log2_sizes)
         end
     end
     return sc
-end
-
-function neighbors(il::IncidenceList{VT}, v) where VT
-    res = VT[]
-    for e in il.v2e[v]
-        for v in il.e2v[e]
-            push!(res, v)
-        end
-    end
-    return unique!(res)
-end
-vertices(il::IncidenceList) = keys(il.v2e)
-vertices(il::IncidenceList, e) = il.e2v[e]
-vertex_degree(il::IncidenceList, v) = length(il.v2e[v])
-edge_degree(il::IncidenceList, e) = length(il.e2v[v])
-edges(il::IncidenceList, v) = il.v2e[v]
-nv(il::IncidenceList) = length(il.v2e)
-ne(il::IncidenceList) = length(il.e2v)
-function delete_vertex!(incidence_list::IncidenceList{VT,ET}, vj::VT) where {VT,ET}
-    edges = pop!(incidence_list.v2e, vj)
-    for e in edges
-        vs = vertices(incidence_list, e)
-        res = findfirst(==(vj), vs)
-        if res !== nothing
-            deleteat!(vs, res)
-        end
-    end
-    return incidence_list
-end
-
-function change_edges!(incidence_list, vi, es)
-    incidence_list.v2e[vi] = es
-    return incidence_list
-end
-
-function remove_edges!(incidence_list, es)
-    for e in es
-        delete!(incidence_list.e2v, e)
-    end
-    return incidence_list
-end
-
-function replace_vertex!(incidence_list, e, pair)
-    el = incidence_list.e2v[e]
-    if pair.first ∈ el
-        if pair.second ∈ el
-            deleteat!(el, findfirst(==(pair.first), el))
-        else
-            replace!(el, pair)
-        end
-    else
-        if pair.second ∉ el
-            push!(el, pair.second)
-        end
-    end
-    return incidence_list
-end
-
-using Test
-@testset "analyze contraction" begin
-    incidence_list = IncidenceList(Dict('A' => ['a', 'b', 'k', 'o', 'f'], 'B'=>['a', 'c', 'd', 'm', 'f'], 'C'=>['b', 'c', 'e', 'f'], 'D'=>['e'], 'E'=>['d', 'f']), openedges=['c', 'f', 'o'])
-    info = analyze_contraction(incidence_list, 'A', 'B')
-    @test Set(info.l1) == Set(['k'])
-    @test Set(info.l2) == Set(['m'])
-    @test Set(info.l12) == Set(['a'])
-    @test Set(info.l01) == Set(['b','o'])
-    @test Set(info.l02) == Set(['c', 'd'])
-    @test Set(info.l012) == Set(['f'])
-end
-
-@testset "tree greedy" begin
-    incidence_list = IncidenceList(Dict('A' => ['a', 'b'], 'B'=>['a', 'c', 'd'], 'C'=>['b', 'c', 'e', 'f'], 'D'=>['e'], 'E'=>['d', 'f']))
-    log2_edge_sizes = Dict([c=>i for (i,c) in enumerate(['a', 'b', 'c', 'd', 'e', 'f'])]...)
-    contract_pair!(incidence_list, 'A', 'B', log2_edge_sizes)
-    target = IncidenceList(Dict('A' => ['b', 'c', 'd'], 'C'=>['b', 'c', 'e', 'f'], 'D'=>['e'], 'E'=>['d', 'f']))
-    @test incidence_list.v2e == target.v2e
-    @test length(target.e2v) == length(incidence_list.e2v)
-    for (k,v) in incidence_list.e2v
-        @test sort(target.e2v[k]) == sort(v)
-    end
-    incidence_list = IncidenceList(Dict('A' => ['a', 'b'], 'B'=>['a', 'c', 'd'], 'C'=>['b', 'c', 'e', 'f'], 'D'=>['e'], 'E'=>['d', 'f']))
-    costs = evaluate_costs(MinSOut(), incidence_list, log2_edge_sizes)
-    @test costs == Dict(('A', 'B')=>9-0.01, ('A', 'C')=>15-0.02, ('B','C')=>18-0.03, ('B','E')=>10-0.04, ('C','D')=>11-0.05, ('C', 'E')=>14-0.06)
-    tree, log2_tcs, log2_scs = tree_greedy(incidence_list, log2_edge_sizes)
-    @test log2_tcs == [10.0, 16, 15, 9]
-    @test tree == ContractionTree(ContractionTree('A', 'B'), ContractionTree(ContractionTree('C', 'D'), 'E'))
 end
